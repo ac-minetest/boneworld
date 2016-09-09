@@ -194,7 +194,7 @@ minetest.register_chatcommand("xp", {
 	func = function(name, param)
 		if param == "" then 
 			msg  = "xp name - show experience of target player" ;
-			msg = msg .."\n# "..name .. " has " .. (boneworld.xp[param] or 1) .. " experience";
+			msg = msg .."\n# "..name .. " has " .. (boneworld.xp[name] or 1) .. " experience";
 		else
 			
 			msg = "# "..param .. " has " .. (boneworld.xp[param] or 1) .. " experience";
