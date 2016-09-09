@@ -17,8 +17,8 @@ boneworld.xp = {};
 
 
 
---local share_bones_time = tonumber(minetest.setting_get("share_bones_time")) or 1200
-local share_bones_time = tonumber(minetest.setting_get("share_bones_time")) or 20;
+local share_bones_time = tonumber(minetest.setting_get("share_bones_time")) or 1200
+--local share_bones_time = tonumber(minetest.setting_get("share_bones_time")) or 20;
 local share_bones_time_early = tonumber(minetest.setting_get("share_bones_time_early")) or share_bones_time / 4
 
 
