@@ -160,7 +160,8 @@ minetest.register_on_leaveplayer(
 		function(player)
 		local name = player:get_player_name();
 		local xp = boneworld.xp[name];
-		if true then --xp > 1.5 then -- save xp for serious players only -- must have killed at least 5 noobs
+		--debug
+		if xp > 1.5 then -- save xp for serious players only -- must have killed at least 5 noobs
 			local filename = worldpath .. "\\boneworld\\" .. name..".xp";
 			
 			local f = io.open(filename, "w");
