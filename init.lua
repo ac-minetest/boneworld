@@ -117,7 +117,7 @@ minetest.register_on_punchplayer(
 
 			--award xp if you kill different ip player, 10% of his xp
 			--debug
-			if minetest.get_player_ip(pname)~=minetest.get_player_ip(hname) then
+			if tostring(minetest.get_player_ip(pname))~=tostring(minetest.get_player_ip(hname)) then
 				local pxp = boneworld.xp[pname];
 				local addxp = math.floor(pxp*0.1*10)/10;
 				boneworld.xp[hname] = math.floor(boneworld.xp[hname]*10)/10 + addxp;
@@ -173,9 +173,6 @@ minetest.register_on_leaveplayer(
 	end
 
 )
-
-
-			
 
 
 local tweak_bones = function()
