@@ -13,8 +13,11 @@
 local worldpath = minetest.get_worldpath();
 os.execute( "mkdir "..worldpath.. "\\boneworld") -- directory used to save xp data
 local boneworld = {};
-boneworld.xp = {};
+boneworld.xp = {}; -- total xp
+boneworld.killxp = {}; -- xp obtained through kills
 
+boneworld.wastedxp = 0; -- xp thats stored in bones and not yet reclaimed
+-- idea: vote on table ( select player checkbox) to select who should receive wasted xp after it accumulates 10? xp
 
 
 local share_bones_time = tonumber(minetest.setting_get("share_bones_time")) or 1200
@@ -45,8 +48,8 @@ local on_timer = function(pos, elapsed)
 			meta:set_string("date",os.date("%x"));
 			meta:set_string("owner_orig",owner);
 			meta:set_string("ip", tostring(minetest.get_player_ip(owner)));
-			meta:set_float("xp", math.floor((boneworld.xp[owner]*1.25*0.1)*10)/10); -- xp stored in bones
-			meta:set_string("infotext"," Here lies " .. owner  .. ", xp " .. meta:get_float("xp"));
+			meta:set_float("xp", boneworld.xp[owner]*1.25*0.1); -- xp stored in bones
+			meta:set_string("infotext"," Here lies " .. owner  .. ", bone xp " .. math.floor(meta:get_float("xp")*100)/100);
 		end
 		meta:set_int("time", time)
 		return true
@@ -100,8 +103,10 @@ local on_punch = function(pos, node, player)
 			end
 		end
 		
-		-- add xp from bones
-		boneworld.xp[puncher] = math.floor((boneworld.xp[puncher] + meta:get_float("xp"))*10)/10;
+		-- add xp from bones to player who retrieved bones;
+		
+		boneworld.xp[puncher] = boneworld.xp[puncher] + meta:get_float("xp");
+		boneworld.wastedxp = boneworld.wastedxp - meta:get_float("xp");
 		minetest.remove_node(pos)
 	end
 end
@@ -119,9 +124,10 @@ minetest.register_on_punchplayer(
 			--debug
 			if tostring(minetest.get_player_ip(pname))~=tostring(minetest.get_player_ip(hname)) then
 				local pxp = boneworld.xp[pname];
-				local addxp = math.floor(pxp*0.1*10)/10;
-				boneworld.xp[hname] = math.floor(boneworld.xp[hname]*10)/10 + addxp;
-				minetest.chat_send_player(hname, "#You killed " .. pname .. ". As a reward you get ".. addxp .. " experience.");
+				local addxp =pxp*0.1;
+				boneworld.xp[hname] = boneworld.xp[hname] + addxp;
+				boneworld.killxp[hname] = boneworld.killxp[hname] + addxp;
+				minetest.chat_send_player(hname, "#You killed " .. pname .. ". As a reward you get ".. math.floor(addxp*100)/100 .. " experience.");
 			end
 		end
 	end
@@ -131,9 +137,14 @@ minetest.register_on_punchplayer(
 minetest.register_on_dieplayer(
 	function(player)
 		local name = player:get_player_name();
-		local lossxp = boneworld.xp[name];
-		minetest.chat_send_player(name, "#You lost ".. lossxp*0.2 .. " experience. Retrieve your bones to get 50% of lost experience back ");
-		boneworld.xp[name] = math.floor(lossxp*0.8*10)/10;
+		local xp = boneworld.xp[name];
+		local newxp = boneworld.xp[name]*0.8;
+		local lossxp = xp - newxp;
+		
+		boneworld.wastedxp  = boneworld.wastedxp + 0.5*lossxp; -- 0.5*lossxp will also get stored in bones
+		
+		minetest.chat_send_player(name, "#You lost ".. math.floor(lossxp*100)/100 .. " experience. Retrieve your bones to get 50% of lost experience back ");
+		boneworld.xp[name] = newxp;
 	end
 )
 
@@ -147,9 +158,14 @@ minetest.register_on_joinplayer(
 			local f = io.open(filename, "r");
 			if not f then -- file does not yet exist
 				boneworld.xp[name] = 1; 
+				boneworld.killxp[name] = 0; 
 				return 
 			end
-			boneworld.xp[name] = f:read("*a") or 1;
+			local str = f:read("*a") or 1;
+			local words = {};
+			for w in str:gmatch("%S+") do words[#words+1]=w end
+			boneworld.xp[name] = tonumber(words[1] or 1);
+			boneworld.killxp[name] = tonumber(words[2] or 0);
 			f:close();
 		end
 	end
@@ -161,12 +177,12 @@ minetest.register_on_leaveplayer(
 		local name = player:get_player_name();
 		local xp = boneworld.xp[name];
 		--debug
-		if xp > 1.5 then -- save xp for serious players only -- must have killed at least 5 noobs
+		if xp > 1.5 then -- save xp for serious players only -- must have collected bones/killed at least 5 noobs
 			local filename = worldpath .. "\\boneworld\\" .. name..".xp";
 			
 			local f = io.open(filename, "w");
 			if not f then return end
-			f:write(xp); 
+			f:write(xp .. " " .. boneworld.killxp[name]); 
 			f:close();
 		else
 			-- dont save, player didnt do anything
@@ -192,12 +208,17 @@ minetest.register_chatcommand("xp", {
 		interact = true
 	},
 	func = function(name, param)
+		
 		if param == "" then 
-			msg  = "xp name - show experience of target player" ;
-			msg = msg .."\n# "..name .. " has " .. (boneworld.xp[name] or 1) .. " experience";
+			local xp = math.floor((boneworld.xp[name])*100)/100;
+			local killxp = math.floor((boneworld.killxp[name])*100)/100;
+			msg  = "xp name - show experience of target player"
+			.."\n# "..name .. " has " .. xp .. " experience (".. killxp .. " kill experience)"
+			.. "\nWasted xp ( not retrieved from bones ) " .. math.floor(boneworld.wastedxp*100)/100;
 		else
-			
-			msg = "# "..param .. " has " .. (boneworld.xp[param] or 1) .. " experience";
+			local xp = math.floor((boneworld.xp[param] or 1)*100)/100;
+			local killxp = math.floor((boneworld.killxp[name])*100)/100;
+			msg = "# "..param .. " has " .. xp .. " experience ("..killxp .. " kill experience)"
 		end 
 		minetest.chat_send_player(name, msg);
 	end
