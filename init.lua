@@ -217,7 +217,7 @@ minetest.register_chatcommand("xp", {
 			.. "\nWasted xp ( not retrieved from bones ) " .. math.floor(boneworld.wastedxp*100)/100;
 		else
 			local xp = math.floor((boneworld.xp[param] or 1)*100)/100;
-			local killxp = math.floor((boneworld.killxp[name])*100)/100;
+			local killxp = math.floor((boneworld.killxp[param])*100)/100;
 			msg = "# "..param .. " has " .. xp .. " experience ("..killxp .. " kill experience)"
 		end 
 		minetest.chat_send_player(name, msg);
