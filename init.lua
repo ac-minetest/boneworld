@@ -127,7 +127,7 @@ minetest.register_on_punchplayer(
 				local addxp =pxp*0.1;
 				boneworld.xp[hname] = boneworld.xp[hname] + addxp;
 				boneworld.killxp[hname] = boneworld.killxp[hname] + addxp;
-				minetest.chat_send_player(hname, "#You killed " .. pname .. ". As a reward you get ".. math.floor(addxp*100)/100 .. " experience.");
+				--minetest.chat_send_player(hname, "#You killed " .. pname .. ". As a reward you get ".. math.floor(addxp*100)/100 .. " experience.");
 			end
 		end
 	end
