@@ -137,8 +137,9 @@ minetest.register_on_punchplayer(
 minetest.register_on_dieplayer(
 	function(player)
 		local name = player:get_player_name();
-		local xp = boneworld.xp[name];
-		local newxp = boneworld.xp[name]*0.8;
+		local xp = boneworld.xp[name] or 1;
+		local newxp = xp*0.8;
+		if newxp<1 then newxp = 1 end
 		local lossxp = xp - newxp;
 		
 		boneworld.wastedxp  = boneworld.wastedxp + 0.5*lossxp; -- 0.5*lossxp will also get stored in bones
