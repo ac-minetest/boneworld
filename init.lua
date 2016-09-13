@@ -115,11 +115,11 @@ end
 minetest.register_on_punchplayer(
 	function(player, hitter, time_from_last_punch, tool_capabilities, dir, damage)
 		local hp = player:get_hp();
-		
+
 		if hp>0 and hp-damage<=0 then -- hitter killed player
 			local pname = player:get_player_name();
-			local hname = hitter:get_player_name();
-
+			local hname = hitter:get_player_name(); if not hname then return end
+			
 			--award xp if you kill different ip player, 10% of his xp
 			--debug
 			if tostring(minetest.get_player_ip(pname))~=tostring(minetest.get_player_ip(hname)) then
@@ -127,7 +127,7 @@ minetest.register_on_punchplayer(
 				local addxp =pxp*0.1;
 				boneworld.xp[hname] = boneworld.xp[hname] + addxp;
 				boneworld.killxp[hname] = boneworld.killxp[hname] + addxp;
-				--minetest.chat_send_player(hname, "#You killed " .. pname .. ". As a reward you get ".. math.floor(addxp*100)/100 .. " experience.");
+				minetest.chat_send_player(hname, "#You killed " .. pname .. ". As a reward you get ".. math.floor(addxp*100)/100 .. " experience.");
 			end
 		end
 	end
