@@ -118,7 +118,9 @@ minetest.register_on_punchplayer(
 
 		if hp>0 and hp-damage<=0 then -- hitter killed player
 			local pname = player:get_player_name();
-			local hname = hitter:get_player_name(); if not hname then return end
+			if not hitter:is_player() then return end
+			local hname = hitter:get_player_name(); 
+			
 			
 			--award xp if you kill different ip player, 10% of his xp
 			--debug
