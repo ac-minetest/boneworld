@@ -48,6 +48,7 @@ local on_timer = function(pos, elapsed)
 			meta:set_string("date",os.date("%x"));
 			meta:set_string("owner_orig",owner);
 			meta:set_string("ip", tostring(minetest.get_player_ip(owner)));
+			boneworld.xp[owner] = boneworld.xp[owner] or 1;
 			meta:set_float("xp", boneworld.xp[owner]*1.25*0.1); -- xp stored in bones
 			meta:set_string("infotext"," Here lies " .. owner  .. ", bone xp " .. math.floor(meta:get_float("xp")*100)/100);
 		end
@@ -129,7 +130,7 @@ minetest.register_on_punchplayer(
 				local addxp =pxp*0.1;
 				boneworld.xp[hname] = boneworld.xp[hname] + addxp;
 				boneworld.killxp[hname] = boneworld.killxp[hname] + addxp;
-				minetest.chat_send_player(hname, "#You killed " .. pname .. ". As a reward you get ".. math.floor(addxp*100)/100 .. " experience.");
+				--minetest.chat_send_player(hname, "#You killed " .. pname .. ". As a reward you get ".. math.floor(addxp*100)/100 .. " experience.");
 			end
 		end
 	end
