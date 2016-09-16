@@ -49,7 +49,7 @@ local on_timer = function(pos, elapsed)
 			meta:set_string("owner_orig",owner);
 			meta:set_string("ip", tostring(minetest.get_player_ip(owner)));
 			if owner == "" or owner == "Monster" then -- mob bones
-				boneworld.xp[owner] = 0.25 -- 1/4th of noob player xp in mobs bone
+				boneworld.xp[owner] = 0.5 -- 1/2th of noob player xp in mobs bone
 				meta:set_int("time")=0.5*share_bones_time
 			else
 				boneworld.xp[owner] = boneworld.xp[owner] or 1;
@@ -107,7 +107,7 @@ local on_punch = function(pos, node, player)
 			-- with every 10 more xp one bone
 			local count = 1+0.2*(10*meta:get_float("xp")+boneworld.xp[puncher])/2.0;
 			count = math.floor(count);
-			minetest.chat_send_player(puncher, "#bones: you find " .. count .. " extra bones in the corpse ");
+			minetest.chat_send_player(puncher, "you find " .. count .. " bones in the corpse.");
 			
 			if player_inv:room_for_item("main", ItemStack("bones:bones "..count)) then
 				player_inv:add_item("main", ItemStack("bones:bones "..count))
