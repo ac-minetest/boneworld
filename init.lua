@@ -5,9 +5,9 @@
 -- you no longer get extra bones if you pick bones from player with same ip address (no suicide bone farming)
 -- each player has experience points (xp)
 -- when you die you loose 20% of your xp, half of that is stored in bones
--- when you kill other player you get 10% of his xp
+-- (when you kill other player you get 10% of his xp)
 -- if you pick up bones you get xp stored in bones
--- if you pick up other player bones you get 20% of average of your and bone owner xp award in extra bones (for example if you have 10 xp and you kill a noob you will get 2 bones instead of normally 1)
+-- if you pick up other player bones you get 20% of average of your and bone owner xp award in extra bones (for example if you have 10 xp and you pick noob bone will get 2 bones instead of normally 1)
 
 
 local worldpath = minetest.get_worldpath();
@@ -35,10 +35,10 @@ end
 
 local on_timer = function(pos, elapsed)
 	local meta = minetest.get_meta(pos)
-	local time = meta:get_int("time") + elapsed
+	local time = meta:get_int("time")+elapsed; 
 	if time >= share_bones_time then
 		
-		meta:set_string("infotext", meta:get_string("owner").."'s old bones (died ".. meta:get_string("date") .."), xp " .. meta:get_float("xp"));
+		meta:set_string("infotext", meta:get_string("owner").."'s old bones (died ".. meta:get_string("date") .."), xp " ..meta:get_float("xp"));
 		meta:set_string("owner", "")
 		
 	else
@@ -48,8 +48,20 @@ local on_timer = function(pos, elapsed)
 			meta:set_string("date",os.date("%x"));
 			meta:set_string("owner_orig",owner);
 			meta:set_string("ip", tostring(minetest.get_player_ip(owner)));
-			boneworld.xp[owner] = boneworld.xp[owner] or 1;
-			meta:set_float("xp", boneworld.xp[owner]*1.25*0.1); -- xp stored in bones
+			if owner == "" or owner == "Monster" then -- mob bones
+				boneworld.xp[owner] = 0.25 -- 1/4th of noob player xp in mobs bone
+				meta:set_int("time")=0.5*share_bones_time
+			else
+				boneworld.xp[owner] = boneworld.xp[owner] or 1;
+			end
+			
+			if boneworld.xp[owner]==1 then
+				meta:set_float("xp", 0.1)
+			else			
+				meta:set_float("xp", boneworld.xp[owner]*1.25*0.1); -- xp stored in bones
+			end
+			
+			boneworld.wastedxp  = boneworld.wastedxp + meta:get_float("xp"); 
 			meta:set_string("infotext"," Here lies " .. owner  .. ", bone xp " .. math.floor(meta:get_float("xp")*100)/100);
 		end
 		meta:set_int("time", time)
@@ -92,8 +104,8 @@ local on_punch = function(pos, node, player)
 		if active and meta:get_string("ip")~= tostring(minetest.get_player_ip(puncher)) then
 			
 			-- average of owners xp (at time of death) and puncher xp will be awarded as extra bones
-			-- with every 5 more average one bone
-			local count = math.max(1,0.2*(10*meta:get_float("xp")+boneworld.xp[puncher])/2.0);
+			-- with every 10 more xp one bone
+			local count = 1+0.2*(10*meta:get_float("xp")+boneworld.xp[puncher])/2.0;
 			count = math.floor(count);
 			minetest.chat_send_player(puncher, "#bones: you find " .. count .. " extra bones in the corpse ");
 			
@@ -145,7 +157,6 @@ minetest.register_on_dieplayer(
 		if newxp<1 then newxp = 1 end
 		local lossxp = xp - newxp;
 		
-		boneworld.wastedxp  = boneworld.wastedxp + 0.5*lossxp; -- 0.5*lossxp will also get stored in bones
 		--minetest.chat_send_player(name, "#You lost ".. math.floor(lossxp*100)/100 .. " experience. Retrieve your bones to get 50% of lost experience back ");
 		boneworld.xp[name] = newxp;
 	end
@@ -217,7 +228,7 @@ minetest.register_chatcommand("xp", {
 			--local killxp = math.floor((boneworld.killxp[name])*100)/100;
 			msg  = "xp name - show bone collecting experience of target player"
 			.."\n# "..name .. " has " .. xp .. " experience"
-			.. "\nWasted xp ( not retrieved from bones ) " .. math.floor(boneworld.wastedxp*100)/100;
+			.. "\nTotal bone xp ( stored in bones ) " .. math.floor(boneworld.wastedxp*100)/100;
 		else
 			local xp = math.floor((boneworld.xp[param] or 1)*100)/100;
 			--local killxp = math.floor((boneworld.killxp[param])*100)/100;
