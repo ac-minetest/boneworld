@@ -50,7 +50,7 @@ local on_timer = function(pos, elapsed)
 			meta:set_string("ip", tostring(minetest.get_player_ip(owner)));
 			if owner == "" or owner == "Monster" then -- mob bones
 				boneworld.xp[owner] = 0.5 -- 1/2th of noob player xp in mobs bone
-				meta:set_int("time")=0.5*share_bones_time
+				meta:set_int("time",0.5*share_bones_time)
 			else
 				boneworld.xp[owner] = boneworld.xp[owner] or 1;
 			end
