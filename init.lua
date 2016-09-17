@@ -38,7 +38,7 @@ local on_timer = function(pos, elapsed)
 	local time = meta:get_int("time")+elapsed; 
 	if time >= share_bones_time then
 		
-		meta:set_string("infotext", meta:get_string("owner").."'s old bones (died ".. meta:get_string("date") .."), xp " ..meta:get_float("xp"));
+		meta:set_string("infotext", meta:get_string("owner").."'s old bones (died ".. meta:get_string("date") .."), xp " ..math.floor(meta:get_float("xp")*100)/100);
 		meta:set_string("owner", "")
 		
 	else
@@ -48,9 +48,9 @@ local on_timer = function(pos, elapsed)
 			meta:set_string("date",os.date("%x"));
 			meta:set_string("owner_orig",owner);
 			meta:set_string("ip", tostring(minetest.get_player_ip(owner)));
-			if owner == "" or owner == "Monster" then -- mob bones
+			if not minetest.get_player_by_name(owner) then -- mob bones
 				boneworld.xp[owner] = 0.5 -- 1/2th of noob player xp in mobs bone
-				meta:set_int("time",0.5*share_bones_time)
+				time=0.5*share_bones_time; -- 2x shorter old bone time
 			else
 				boneworld.xp[owner] = boneworld.xp[owner] or 1;
 			end
