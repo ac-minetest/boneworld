@@ -49,8 +49,8 @@ local on_timer = function(pos, elapsed)
 			meta:set_string("owner_orig",owner);
 			meta:set_string("ip", tostring(minetest.get_player_ip(owner)));
 			if not minetest.get_player_by_name(owner) then -- mob bones
-				boneworld.xp[owner] = 0.5 -- 1/2th of noob player xp in mobs bone
-				time=0.5*share_bones_time; -- 2x shorter old bone time
+				boneworld.xp[owner] = 0.2/1.25 -- 0.2th of noob player xp in mobs bone
+				time=0.8*share_bones_time; -- 5x shorter old bone time
 			else
 				boneworld.xp[owner] = boneworld.xp[owner] or 1;
 			end
@@ -102,10 +102,10 @@ local on_punch = function(pos, node, player)
 		-- award extra bones if you collect bones from different ip player
 		--debug
 		if active and meta:get_string("ip")~= tostring(minetest.get_player_ip(puncher)) then
-			
+			local xp = meta:get_float("xp");if xp==0 then xp = 0.01 end
 			-- average of owners xp (at time of death) and puncher xp will be awarded as extra bones
 			-- with every 10 more xp one bone
-			local count = 1+0.2*(10*meta:get_float("xp")+boneworld.xp[puncher])/2.0;
+			local count = 1+0.1*boneworld.xp[puncher];
 			count = math.floor(count);
 			minetest.chat_send_player(puncher, "you find " .. count .. " bones in the corpse.");
 			
@@ -118,7 +118,7 @@ local on_punch = function(pos, node, player)
 		
 		-- add xp from bones to player who retrieved bones;
 		
-		boneworld.xp[puncher] = boneworld.xp[puncher] + meta:get_float("xp");
+		--boneworld.xp[puncher] = boneworld.xp[puncher] + meta:get_float("xp");
 		boneworld.wastedxp = boneworld.wastedxp - meta:get_float("xp");
 		minetest.remove_node(pos)
 	end
@@ -148,14 +148,16 @@ end
 	-- end
 -- )
 
--- 20% of xp is lost upon death
+-- 10% of xp is lost upon death
 minetest.register_on_dieplayer(
 	function(player)
 		local name = player:get_player_name();
 		local xp = boneworld.xp[name] or 1;
-		local newxp = xp*0.8;
+		local lossxp = math.min(5,xp*0.1); -- cant lose more than  5 xp
+		
+		local newxp = xp-lossxp;
 		if newxp<1 then newxp = 1 end
-		local lossxp = xp - newxp;
+		
 		
 		--minetest.chat_send_player(name, "#You lost ".. math.floor(lossxp*100)/100 .. " experience. Retrieve your bones to get 50% of lost experience back ");
 		boneworld.xp[name] = newxp;
@@ -237,3 +239,19 @@ minetest.register_chatcommand("xp", {
 		minetest.chat_send_player(name, msg);
 	end
 });
+
+-- limit digging to above -(200+xp*5)
+local old_is_protected = minetest.is_protected
+function minetest.is_protected(pos, name)
+	
+	local xp = boneworld.xp[name] or 1;
+	local maxdepth = 200+5*xp;
+	if pos.y<-maxdepth then
+		minetest.chat_send_player(name, "You can only dig above -"..math.floor(maxdepth) .. ". Get more experience to dig deeper");
+		local player = minetest.get_player_by_name(name); if not player then return true end
+		if pos.y<-maxdepth-5 then player:setpos({x=0,y=1,z=0}) end
+		return true
+	end
+	return old_is_protected(pos, name)
+end
+
