@@ -118,7 +118,7 @@ local on_punch = function(pos, node, player)
 		
 		-- add xp from bones to player who retrieved bones;
 		
-		--boneworld.xp[puncher] = boneworld.xp[puncher] + meta:get_float("xp");
+		boneworld.xp[puncher] = boneworld.xp[puncher] + meta:get_float("xp");
 		boneworld.wastedxp = boneworld.wastedxp - meta:get_float("xp");
 		minetest.remove_node(pos)
 	end
