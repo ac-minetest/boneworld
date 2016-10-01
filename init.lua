@@ -246,6 +246,8 @@ minetest.register_chatcommand("xp", {
 local old_is_protected = minetest.is_protected
 function minetest.is_protected(pos, name)
 	
+	if pos.y>-200 then return old_is_protected(pos, name) end
+	
 	local xp = boneworld.xp[name] or 1;
 	local maxdepth = 200+10*xp;
 	if pos.y<-maxdepth then
