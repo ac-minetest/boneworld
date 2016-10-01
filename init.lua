@@ -49,7 +49,7 @@ local on_timer = function(pos, elapsed)
 			meta:set_string("owner_orig",owner);
 			meta:set_string("ip", tostring(minetest.get_player_ip(owner)));
 			if not minetest.get_player_by_name(owner) then -- mob bones
-				boneworld.xp[owner] = 0.2/1.25 -- 0.2th of noob player xp in mobs bone
+				boneworld.xp[owner] = 0.2*0.9 -- 0.2th of noob player xp in mobs bone
 				time=0.8*share_bones_time; -- 5x shorter old bone time
 			else
 				boneworld.xp[owner] = boneworld.xp[owner] or 1;
@@ -58,7 +58,9 @@ local on_timer = function(pos, elapsed)
 			if boneworld.xp[owner]==1 then
 				meta:set_float("xp", 0.1)
 			else			
-				meta:set_float("xp", boneworld.xp[owner]*1.25*0.1); -- xp stored in bones
+				local lossxp = math.min(5,boneworld.xp[owner]*0.1/0.9);
+				
+				meta:set_float("xp", lossxp); -- xp stored in bones
 			end
 			
 			boneworld.wastedxp  = boneworld.wastedxp + meta:get_float("xp"); 
