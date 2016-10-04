@@ -16,8 +16,8 @@ boneworld = {};
 boneworld.xp = {}; -- bone collect xp
 boneworld.digxp = {}; -- mining xp
 
--- those players can dig anywhere
-boneworld.ignored = {["maikerumine"]=1,["Fixer"]=1,["abba"]=1,["843jdc"]=1, ["sorcerykid"] = 1} 
+-- those players get special dig xp when they join
+boneworld.vipdig = {["maikerumine"]=1000,["Fixer"]=300,["abba"]=100000,["843jdc"]=300, ["sorcerykid"] = 300} 
 
 
 --boneworld.killxp = {}; -- xp obtained through kills
@@ -216,17 +216,24 @@ minetest.register_on_joinplayer(
 			if not f then -- file does not yet exist
 				boneworld.xp[name] = 1; 
 				boneworld.digxp[name] = 0; 
-				return 
+			else
+				local str = f:read("*a") or 1;
+				local words = {};
+				for w in str:gmatch("%S+") do 
+					words[#words+1]=w 
+				end
+				boneworld.xp[name] = tonumber(words[1] or 1);
+				boneworld.digxp[name] = tonumber(words[2] or 0);
+				f:close();
 			end
-			local str = f:read("*a") or 1;
-			local words = {};
-			for w in str:gmatch("%S+") do 
-				words[#words+1]=w 
-			end
-			boneworld.xp[name] = tonumber(words[1] or 1);
-			boneworld.digxp[name] = tonumber(words[2] or 0);
-			f:close();
 		end
+	
+		if boneworld.vipdig[name] then
+			if boneworld.digxp[name]<boneworld.vipdig[name] then
+				boneworld.digxp[name] = boneworld.vipdig[name];
+			end
+		end
+		
 	end
 )
 
@@ -296,7 +303,7 @@ minetest.register_chatcommand("xp", {
 local old_is_protected = minetest.is_protected
 function minetest.is_protected(pos, name)
 	
-	if pos.y>-200 or boneworld.ignored[name] then 
+	if pos.y>-200 then 
 		return old_is_protected(pos, name) 
 	end
 		
