@@ -12,8 +12,14 @@
 
 local worldpath = minetest.get_worldpath();
 os.execute( "mkdir "..worldpath.. "\\boneworld") -- directory used to save xp data
-local boneworld = {};
-boneworld.xp = {}; -- total xp
+boneworld = {};
+boneworld.xp = {}; -- bone collect xp
+boneworld.digxp = {}; -- mining xp
+
+-- those players can dig anywhere
+boneworld.ignored = {["maikerumine"]=1,["Fixer"]=1,["abba"]=1,["843jdc"]=1, ["sorcerykid"] = 1} 
+
+
 --boneworld.killxp = {}; -- xp obtained through kills
 
 boneworld.wastedxp = 0; -- xp thats stored in bones and not yet reclaimed
@@ -33,6 +39,37 @@ local function is_owner(pos, name)
 	return false
 end
 
+local on_construct = function(pos) -- MINETEST BUG: doesnt even get called
+	
+	local meta = minetest.get_meta(pos);
+	
+	if meta:get_int("active") == 0 then -- store data in bones, 1x
+			meta:set_int("active",1);
+			local owner = meta:get_string("owner");
+			meta:set_string("date",os.date("%x"));
+			meta:set_string("owner_orig",owner);
+			meta:set_string("ip", tostring(minetest.get_player_ip(owner)));
+			if not minetest.get_player_by_name(owner) then -- mob bones
+				boneworld.xp[owner] = 0.2*0.9 -- 0.2th of noob player xp in mobs bone
+				time=0.8*share_bones_time; -- 5x shorter old bone time
+			else
+				boneworld.xp[owner] = boneworld.xp[owner] or 1;
+			end
+			
+			if boneworld.xp[owner]==1 then
+				meta:set_float("xp", 0.1)
+			else			
+				local lossxp = math.min(5,boneworld.xp[owner]*0.1/0.9);
+				
+				meta:set_float("xp", lossxp); -- xp stored in bones
+			end
+			
+			boneworld.wastedxp  = boneworld.wastedxp + meta:get_float("xp"); 
+			meta:set_string("infotext"," Here lies " .. owner  .. ", bone xp " .. math.floor(meta:get_float("xp")*100)/100);
+		end
+	
+end
+
 local on_timer = function(pos, elapsed)
 	local meta = minetest.get_meta(pos)
 	local time = meta:get_int("time")+elapsed; 
@@ -42,6 +79,7 @@ local on_timer = function(pos, elapsed)
 		meta:set_string("owner", "")
 		
 	else
+		
 		if meta:get_int("active") == 0 then -- store data in bones, 1x
 			meta:set_int("active",1);
 			local owner = meta:get_string("owner");
@@ -66,6 +104,8 @@ local on_timer = function(pos, elapsed)
 			boneworld.wastedxp  = boneworld.wastedxp + meta:get_float("xp"); 
 			meta:set_string("infotext"," Here lies " .. owner  .. ", bone xp " .. math.floor(meta:get_float("xp")*100)/100);
 		end
+	
+	
 		meta:set_int("time", time)
 		return true
 	end
@@ -150,7 +190,7 @@ end
 	-- end
 -- )
 
--- 10% of xp is lost upon death
+-- 10% of bone xp is lost upon death
 minetest.register_on_dieplayer(
 	function(player)
 		local name = player:get_player_name();
@@ -159,8 +199,7 @@ minetest.register_on_dieplayer(
 		
 		local newxp = xp-lossxp;
 		if newxp<1 then newxp = 1 end
-		
-		
+	
 		--minetest.chat_send_player(name, "#You lost ".. math.floor(lossxp*100)/100 .. " experience. Retrieve your bones to get 50% of lost experience back ");
 		boneworld.xp[name] = newxp;
 	end
@@ -176,14 +215,16 @@ minetest.register_on_joinplayer(
 			local f = io.open(filename, "r");
 			if not f then -- file does not yet exist
 				boneworld.xp[name] = 1; 
-				--boneworld.killxp[name] = 0; 
+				boneworld.digxp[name] = 0; 
 				return 
 			end
 			local str = f:read("*a") or 1;
 			local words = {};
-			for w in str:gmatch("%S+") do words[#words+1]=w end
+			for w in str:gmatch("%S+") do 
+				words[#words+1]=w 
+			end
 			boneworld.xp[name] = tonumber(words[1] or 1);
-			--boneworld.killxp[name] = tonumber(words[2] or 0);
+			boneworld.digxp[name] = tonumber(words[2] or 0);
 			f:close();
 		end
 	end
@@ -194,13 +235,14 @@ minetest.register_on_leaveplayer(
 		function(player)
 		local name = player:get_player_name();
 		local xp = boneworld.xp[name] or 1;
+		local digxp = boneworld.digxp[name] or 0;
 		--debug
 		if xp > 1.5 then -- save xp for serious players only -- must have collected bones/killed at least 5 noobs
 			local filename = worldpath .. "\\boneworld\\" .. name..".xp";
 			
 			local f = io.open(filename, "w");
 			if not f then return end
-			f:write(xp);-- .. " " .. boneworld.killxp[name]); 
+			f:write(xp .. " " .. digxp);
 			f:close();
 		else
 			-- dont save, player didnt do anything
@@ -213,6 +255,7 @@ minetest.register_on_leaveplayer(
 local tweak_bones = function()
 	local name = "bones:bones";
 	local table = minetest.registered_nodes[name];
+	table.on_construct = on_construct;
 	table.on_punch = on_punch;
 	table.on_timer = on_timer;
 	minetest.register_node(":"..name, table);
@@ -227,35 +270,111 @@ minetest.register_chatcommand("xp", {
 	},
 	func = function(name, param)
 		
+		local msg;
 		if param == "" then 
 			local xp = math.floor((boneworld.xp[name])*100)/100;
+			local digxp = math.floor((boneworld.digxp[name])*100)/100;
 			--local killxp = math.floor((boneworld.killxp[name])*100)/100;
-			msg  = "xp name - show bone collecting experience of target player (10.01.16)"
-			.."\n# "..name .. " has " .. xp .. " experience"
-			.. "\nTotal bone xp ( stored in bones ) " .. math.floor(boneworld.wastedxp*100)/100;
+			msg  = "xp name - show experience of target player (10.04.16)"
+			.."\n# "..name .. " has " .. xp .. " bone collecting experience, ".. digxp .. " digging experience"
+			.. " (can dig to ".. math.floor(200+50*math.sqrt(digxp)) .. ")"
+			.. "\nTotal xp stored in bones in world is " .. math.floor(boneworld.wastedxp*100)/100;
 		else
 			local xp = math.floor((boneworld.xp[param] or 1)*100)/100;
-			--local killxp = math.floor((boneworld.killxp[param])*100)/100;
-			msg = "# "..param .. " has " .. xp .. " experience"
+			local digxp = math.floor((boneworld.digxp[param] or 0)*100)/100;
+			--local killxp = math.floor((boneworld.killxp[name])*100)/100;
+			msg  = "xp name - show experience of target player (10.04.16)"
+			.."\n# "..param .. " has " .. xp .. " bone collecting experience, ".. digxp .. " digging experience";
+
 		end 
 		minetest.chat_send_player(name, msg);
 	end
-});
+})
+
 
 -- limit digging to above -(200+xp*5)
 local old_is_protected = minetest.is_protected
 function minetest.is_protected(pos, name)
 	
-	if pos.y>-250 then return old_is_protected(pos, name) end
+	if pos.y>-200 or boneworld.ignored[name] then 
+		return old_is_protected(pos, name) 
+	end
+		
+	--to do : digxp here!!
+	local digxp = boneworld.digxp[name] or 0;
 	
-	local xp = boneworld.xp[name] or 1;
-	local maxdepth = 250+10*xp;
+	local maxdepth = 200+50*math.sqrt(digxp);
 	if pos.y<-maxdepth then
-		minetest.chat_send_player(name, "You can only dig above -"..math.floor(maxdepth) .. ". Get more experience to dig deeper");
+		minetest.chat_send_player(name, "You can only dig above -"..math.floor(maxdepth) .. ". Get more dig experience to dig deeper");
 		local player = minetest.get_player_by_name(name); if not player then return true end
 		if pos.y<-maxdepth-5 then player:setpos({x=0,y=1,z=0}) end
 		return true
 	end
 	return old_is_protected(pos, name)
 end
+
+-- mining xp
+
+-- how much mining xp digging minerals yields
+boneworld.mineralxp = {
+["default:stone"] = 0.01,
+["default:stone_with_coal"] = 0.03,
+["default:stone_with_iron"] = 0.1,
+["default:stone_with_copper"] = 0.1,
+["default:stone_with_gold"] = 0.2,
+["default:stone_with_mese"] = 0.5,
+["default:stone_with_diamond"] = 1,
+}
+
+
+local after_dig_node = function(pos, oldnode, oldmetadata, digger)
+	local nodename = oldnode.name;
+	local name = digger:get_player_name();
+	local digxp = boneworld.mineralxp[nodename] or 0; digxp = digxp*0.1; -- bonus xp
+	local xp  = boneworld.digxp[name];
+	xp = boneworld.digxp[name] + digxp;
+	boneworld.digxp[name] = xp;
+	
+	-- extra reward with small probability
+	if xp<100 or nodename == "default:stone" or digxp == 0 then return end
+	
+	local P; 
+	if xp>10000 then 
+		P=0.5
+	else
+		P = (xp/10000+0.0001)*0.5;
+		if math.random(1/P) == 1 then
+			P=1;
+		end
+	end
+	if P==1 then
+		
+		local player_inv = digger:get_inventory()
+		local stk = ItemStack(nodename);
+		if player_inv:room_for_item("main", stk) then
+			--minetest.chat_send_player(name, "Congratulations! You found extra " .. nodename)
+			player_inv:add_item("main", stk)
+		end
+	end
+	
+	--minetest.chat_send_all(name .. " digged " .. nodename .. " for " .. digxp .. " mining xp ")
+end
+
+local set_after_dig_node = function(name)
+	local tabl = minetest.registered_nodes[name];
+	if not tabl then return end
+	minetest.override_item(name, {after_dig_node = after_dig_node})
+end
+
+minetest.after(0, 
+	function() 
+		set_after_dig_node("default:stone");
+		set_after_dig_node("default:stone_with_iron");
+		set_after_dig_node("default:stone_with_copper");
+		set_after_dig_node("default:stone_with_coal");
+		set_after_dig_node("default:stone_with_gold");
+		set_after_dig_node("default:stone_with_mese");
+		set_after_dig_node("default:stone_with_diamond");
+	end
+)
 
