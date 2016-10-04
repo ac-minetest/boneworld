@@ -17,7 +17,7 @@ boneworld.xp = {}; -- bone collect xp
 boneworld.digxp = {}; -- mining xp
 
 -- those players get special dig xp when they join
-boneworld.vipdig = {["maikerumine"]=1000,["Fixer"]=300,["abba"]=100000,["843jdc"]=300, ["sorcerykid"] = 300} 
+boneworld.vipdig = {["maikerumine"]=1000,["Fixer"]=1000,["abba"]=1000000,["843jdc"]=1000, ["sorcerykid"] = 1000} 
 
 
 --boneworld.killxp = {}; -- xp obtained through kills
@@ -39,36 +39,6 @@ local function is_owner(pos, name)
 	return false
 end
 
-local on_construct = function(pos) -- MINETEST BUG: doesnt even get called
-	
-	local meta = minetest.get_meta(pos);
-	
-	if meta:get_int("active") == 0 then -- store data in bones, 1x
-			meta:set_int("active",1);
-			local owner = meta:get_string("owner");
-			meta:set_string("date",os.date("%x"));
-			meta:set_string("owner_orig",owner);
-			meta:set_string("ip", tostring(minetest.get_player_ip(owner)));
-			if not minetest.get_player_by_name(owner) then -- mob bones
-				boneworld.xp[owner] = 0.2*0.9 -- 0.2th of noob player xp in mobs bone
-				time=0.8*share_bones_time; -- 5x shorter old bone time
-			else
-				boneworld.xp[owner] = boneworld.xp[owner] or 1;
-			end
-			
-			if boneworld.xp[owner]==1 then
-				meta:set_float("xp", 0.1)
-			else			
-				local lossxp = math.min(5,boneworld.xp[owner]*0.1/0.9);
-				
-				meta:set_float("xp", lossxp); -- xp stored in bones
-			end
-			
-			boneworld.wastedxp  = boneworld.wastedxp + meta:get_float("xp"); 
-			meta:set_string("infotext"," Here lies " .. owner  .. ", bone xp " .. math.floor(meta:get_float("xp")*100)/100);
-		end
-	
-end
 
 local on_timer = function(pos, elapsed)
 	local meta = minetest.get_meta(pos)
@@ -96,8 +66,8 @@ local on_timer = function(pos, elapsed)
 			if boneworld.xp[owner]==1 then
 				meta:set_float("xp", 0.1)
 			else			
-				local lossxp = math.min(5,boneworld.xp[owner]*0.1/0.9);
-				
+				--local lossxp = math.min(5,boneworld.xp[owner]*0.1/0.9);
+				local lossxp = 0.1;
 				meta:set_float("xp", lossxp); -- xp stored in bones
 			end
 			
@@ -166,45 +136,6 @@ local on_punch = function(pos, node, player)
 	end
 end
 
--- award xp to killer
--- minetest.register_on_punchplayer(
-	-- function(player, hitter, time_from_last_punch, tool_capabilities, dir, damage)
-		-- local hp = player:get_hp();
-
-		-- if hp>0 and hp-damage<=0 then -- hitter killed player
-			-- local pname = player:get_player_name();
-			-- if not hitter:is_player() then return end
-			-- local hname = hitter:get_player_name(); 
-			
-			
-			--award xp if you kill different ip player, 10% of his xp
-			
-			-- if tostring(minetest.get_player_ip(pname))~=tostring(minetest.get_player_ip(hname)) then
-				-- local pxp = boneworld.xp[pname];
-				-- local addxp =pxp*0.1;
-				-- boneworld.xp[hname] = boneworld.xp[hname] + addxp;
-				-- boneworld.killxp[hname] = boneworld.killxp[hname] + addxp;
-				--minetest.chat_send_player(hname, "#You killed " .. pname .. ". As a reward you get ".. math.floor(addxp*100)/100 .. " experience.");
-			-- end
-		-- end
-	-- end
--- )
-
--- 10% of bone xp is lost upon death
-minetest.register_on_dieplayer(
-	function(player)
-		local name = player:get_player_name();
-		local xp = boneworld.xp[name] or 1;
-		local lossxp = math.min(5,xp*0.1); -- cant lose more than  5 xp
-		
-		local newxp = xp-lossxp;
-		if newxp<1 then newxp = 1 end
-	
-		--minetest.chat_send_player(name, "#You lost ".. math.floor(lossxp*100)/100 .. " experience. Retrieve your bones to get 50% of lost experience back ");
-		boneworld.xp[name] = newxp;
-	end
-)
-
 
 -- load xp
 minetest.register_on_joinplayer(
@@ -223,6 +154,9 @@ minetest.register_on_joinplayer(
 					words[#words+1]=w 
 				end
 				boneworld.xp[name] = tonumber(words[1] or 1);
+				if boneworld.xp[name]>100 then -- upper limit on bone xp
+					if boneworld.xp[name] = 100;
+				end
 				boneworld.digxp[name] = tonumber(words[2] or 0);
 				f:close();
 			end
@@ -244,7 +178,7 @@ minetest.register_on_leaveplayer(
 		local xp = boneworld.xp[name] or 1;
 		local digxp = boneworld.digxp[name] or 0;
 		--debug
-		if xp > 1.5 then -- save xp for serious players only -- must have collected bones/killed at least 5 noobs
+		if xp > 2 then -- save xp for serious players only
 			local filename = worldpath .. "\\boneworld\\" .. name..".xp";
 			
 			local f = io.open(filename, "w");
