@@ -17,7 +17,7 @@ boneworld.xp = {}; -- bone collect xp
 boneworld.digxp = {}; -- mining xp
 
 -- those players get special dig xp when they join
-boneworld.vipdig = {["maikerumine"]=1000,["Fixer"]=1000,["abba"]=1000000,["843jdc"]=1000, ["sorcerykid"] = 1000} 
+boneworld.vipdig = {["abba"]=1000000} 
 
 
 --boneworld.killxp = {}; -- xp obtained through kills
@@ -61,6 +61,7 @@ local on_timer = function(pos, elapsed)
 				time=0.8*share_bones_time; -- 5x shorter old bone time
 			else
 				boneworld.xp[owner] = boneworld.xp[owner] or 1;
+				time = 0;
 			end
 			
 			if boneworld.xp[owner]==1 then
@@ -237,7 +238,7 @@ minetest.register_chatcommand("xp", {
 local old_is_protected = minetest.is_protected
 function minetest.is_protected(pos, name)
 	
-	if pos.y>-200 then 
+	if pos.y>-200 or name == "" then 
 		return old_is_protected(pos, name) 
 	end
 		
@@ -284,10 +285,12 @@ local after_dig_node = function(pos, oldnode, oldmetadata, digger)
 		P=0.5
 	else
 		P = (xp/10000+0.0001)*0.5;
-		if math.random(1/P) == 1 then
-			P=1;
-		end
 	end
+	
+	if math.random(1/P) == 1 then
+		P=1;
+	end
+	
 	if P==1 then
 		
 		local player_inv = digger:get_inventory()
