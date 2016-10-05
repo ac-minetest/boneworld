@@ -155,7 +155,7 @@ minetest.register_on_joinplayer(
 				end
 				boneworld.xp[name] = tonumber(words[1] or 1);
 				if boneworld.xp[name]>100 then -- upper limit on bone xp
-					if boneworld.xp[name] = 100;
+					boneworld.xp[name] = 100;
 				end
 				boneworld.digxp[name] = tonumber(words[2] or 0);
 				f:close();
