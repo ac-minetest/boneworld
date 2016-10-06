@@ -45,7 +45,7 @@ local on_timer = function(pos, elapsed)
 	local time = meta:get_int("time")+elapsed; 
 	if time >= share_bones_time then
 		
-		meta:set_string("infotext", meta:get_string("owner").."'s old bones (died ".. meta:get_string("date") .."), xp " ..math.floor(meta:get_float("xp")*100)/100);
+		meta:set_string("infotext", meta:get_string("owner").."'s old bones (died ".. meta:get_string("date") .."), bone xp " ..math.floor(meta:get_float("xp")*100)/100);
 		meta:set_string("owner", "")
 		
 	else
@@ -57,19 +57,17 @@ local on_timer = function(pos, elapsed)
 			meta:set_string("owner_orig",owner);
 			meta:set_string("ip", tostring(minetest.get_player_ip(owner)));
 			if not minetest.get_player_by_name(owner) then -- mob bones
-				boneworld.xp[owner] = 0.2*0.9 -- 0.2th of noob player xp in mobs bone
-				time=0.8*share_bones_time; -- 5x shorter old bone time
+				boneworld.xp[owner] = 0.1 -- 0.1th of noob player xp in mobs bone
+				time=0.9*share_bones_time; -- 10x shorter old bone time
 			else
 				boneworld.xp[owner] = boneworld.xp[owner] or 1;
 				time = 0;
 			end
 			
-			if boneworld.xp[owner]==1 then
-				meta:set_float("xp", 0.1)
+			if boneworld.xp[owner]<1 then
+				meta:set_float("xp", 0.01) -- mobs or bones with 0 xp
 			else			
-				--local lossxp = math.min(5,boneworld.xp[owner]*0.1/0.9);
-				local lossxp = 0.1;
-				meta:set_float("xp", lossxp); -- xp stored in bones
+				meta:set_float("xp", 0.1); -- player bones give 0.1 xp, same as 10 mob bones
 			end
 			
 			boneworld.wastedxp  = boneworld.wastedxp + meta:get_float("xp"); 
@@ -112,13 +110,20 @@ local on_punch = function(pos, node, player)
 		local active  = meta:get_int("active") == 1;
 		local puncher = player:get_player_name();
 		
-		-- award extra bones if you collect bones from different ip player
+		-- award extra bones/xp if you collect bones from different ip player
 		--debug
 		if active and meta:get_string("ip")~= tostring(minetest.get_player_ip(puncher)) then
 			local xp = meta:get_float("xp");if xp==0 then xp = 0.01 end
 			-- average of owners xp (at time of death) and puncher xp will be awarded as extra bones
 			-- with every 10 more xp one bone
-			local count = 1+0.1*boneworld.xp[puncher];
+			
+			local count;
+			if boneworld.xp[puncher]>100 then -- dont give more bones when bone xp exceeds 100
+				count = 1 + 0.1*100;
+			else
+				count = 1+0.1*boneworld.xp[puncher];
+			end
+			
 			count = math.floor(count);
 			minetest.chat_send_player(puncher, "you find " .. count .. " bones in the corpse.");
 			
@@ -127,12 +132,14 @@ local on_punch = function(pos, node, player)
 			else
 				minetest.add_item(pos,ItemStack("bones:bones "..count))
 			end
+		
+			-- add xp from bones to player who retrieved bones;
+			
+			boneworld.xp[puncher] = boneworld.xp[puncher] + meta:get_float("xp");
+			boneworld.wastedxp = boneworld.wastedxp - meta:get_float("xp");
 		end
 		
-		-- add xp from bones to player who retrieved bones;
 		
-		boneworld.xp[puncher] = boneworld.xp[puncher] + meta:get_float("xp");
-		boneworld.wastedxp = boneworld.wastedxp - meta:get_float("xp");
 		minetest.remove_node(pos)
 	end
 end
@@ -155,9 +162,6 @@ minetest.register_on_joinplayer(
 					words[#words+1]=w 
 				end
 				boneworld.xp[name] = tonumber(words[1] or 1);
-				if boneworld.xp[name]>100 then -- upper limit on bone xp
-					boneworld.xp[name] = 100;
-				end
 				boneworld.digxp[name] = tonumber(words[2] or 0);
 				f:close();
 			end
@@ -191,6 +195,19 @@ minetest.register_on_leaveplayer(
 		end
 	end
 
+)
+
+minetest.register_on_dieplayer( -- -1 bone xp each time you die; otherwise no motivation to be careful
+	function(player)
+		local name = player:get_player_name();
+		local xp = boneworld.xp[name] or 1;
+		if xp>2 then 
+			xp=xp-1 
+		else
+			xp = 1;
+		end
+		boneworld.xp[name]=xp;
+	end
 )
 
 
