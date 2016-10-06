@@ -9,6 +9,7 @@
 -- if you pick up bones you get xp stored in bones
 -- if you pick up other player bones you get 20% of average of your and bone owner xp award in extra bones (for example if you have 10 xp and you pick noob bone will get 2 bones instead of normally 1)
 
+local version = "10/06/16"
 
 local worldpath = minetest.get_worldpath();
 os.execute( "mkdir "..worldpath.. "\\boneworld") -- directory used to save xp data
@@ -223,7 +224,7 @@ end
 minetest.after(0,tweak_bones);
 
 minetest.register_chatcommand("xp", {
-	description = "xp name - show bone collecting experience of target player",
+	description = "xp name - show bone collecting experience of target player " .. version,
 	privs = {
 		interact = true
 	},
@@ -234,7 +235,7 @@ minetest.register_chatcommand("xp", {
 			local xp = math.floor((boneworld.xp[name])*100)/100;
 			local digxp = math.floor((boneworld.digxp[name])*100)/100;
 			--local killxp = math.floor((boneworld.killxp[name])*100)/100;
-			msg  = "xp name - show experience of target player (10.04.16)"
+			msg  = "xp name - show experience of target player"
 			.."\n# "..name .. " has " .. xp .. " bone collecting experience, ".. digxp .. " digging experience"
 			.. " (can dig to ".. math.floor(200+50*math.sqrt(digxp)) .. ")"
 			.. "\nTotal xp stored in bones in world is " .. math.floor(boneworld.wastedxp*100)/100;
