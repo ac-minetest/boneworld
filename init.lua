@@ -9,7 +9,7 @@
 -- if you pick up bones you get xp stored in bones
 -- if you pick up other player bones you get 20% of average of your and bone owner xp award in extra bones (for example if you have 10 xp and you pick noob bone will get 2 bones instead of normally 1)
 
-local version = "10/06/16"
+local version = "10/07/16"
 
 local worldpath = minetest.get_worldpath();
 os.execute( "mkdir "..worldpath.. "\\boneworld") -- directory used to save xp data
@@ -181,15 +181,15 @@ minetest.register_on_joinplayer(
 minetest.register_on_leaveplayer(
 		function(player)
 		local name = player:get_player_name();
-		local xp = boneworld.xp[name] or 1;
+		local bonexp = boneworld.xp[name] or 1;
 		local digxp = boneworld.digxp[name] or 0;
 		--debug
-		if xp > 2 then -- save xp for serious players only
+		if bonexp > 2 or digxp>1 then -- save xp for serious players only
 			local filename = worldpath .. "\\boneworld\\" .. name..".xp";
 			
 			local f = io.open(filename, "w");
 			if not f then return end
-			f:write(xp .. " " .. digxp);
+			f:write(bonexp .. " " .. digxp);
 			f:close();
 		else
 			-- dont save, player didnt do anything
@@ -215,7 +215,7 @@ minetest.register_on_dieplayer( -- -1 bone xp each time you die; otherwise no mo
 local tweak_bones = function()
 	local name = "bones:bones";
 	local table = minetest.registered_nodes[name];
-	table.on_construct = on_construct;
+	--table.on_construct = on_construct;
 	table.on_punch = on_punch;
 	table.on_timer = on_timer;
 	minetest.register_node(":"..name, table);
