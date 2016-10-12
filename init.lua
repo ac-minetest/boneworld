@@ -9,7 +9,7 @@
 -- if you pick up bones you get xp stored in bones
 -- if you pick up other player bones you get 20% of average of your and bone owner xp award in extra bones (for example if you have 10 xp and you pick noob bone will get 2 bones instead of normally 1)
 
-local version = "10/07/16"
+local version = "10/12/16"
 
 local worldpath = minetest.get_worldpath();
 os.execute( "mkdir "..worldpath.. "\\boneworld") -- directory used to save xp data
@@ -291,8 +291,8 @@ local after_dig_node = function(pos, oldnode, oldmetadata, digger)
 	local nodename = oldnode.name;
 	local name = digger:get_player_name();
 	local digxp = boneworld.mineralxp[nodename] or 0; digxp = digxp*0.1; -- bonus xp
-	local xp  = boneworld.digxp[name];
-	xp = boneworld.digxp[name] + digxp;
+	local xp  = boneworld.digxp[name] or 0;
+	xp = xp + digxp;
 	boneworld.digxp[name] = xp;
 	
 	-- extra reward with small probability
