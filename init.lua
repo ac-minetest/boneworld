@@ -9,10 +9,12 @@
 -- if you pick up bones you get xp stored in bones
 -- if you pick up other player bones you get 20% of average of your and bone owner xp award in extra bones (for example if you have 10 xp and you pick noob bone will get 2 bones instead of normally 1)
 
-local version = "10/12/16"
+local version = "10/22/16"
 
 local worldpath = minetest.get_worldpath();
-os.execute( "mkdir "..worldpath.. "\\boneworld") -- directory used to save xp data
+--os.execute( "mkdir "..worldpath.. "\\boneworld") 
+minetest.mkdir(worldpath .. "\\boneworld") -- directory used to save xp data
+
 boneworld = {};
 boneworld.xp = {}; -- bone collect xp
 boneworld.digxp = {}; -- mining xp
@@ -24,7 +26,6 @@ boneworld.vipdig = {["abba"]=1000000}
 --boneworld.killxp = {}; -- xp obtained through kills
 
 boneworld.wastedxp = 0; -- xp thats stored in bones and not yet reclaimed
--- idea: vote on table ( select player checkbox) to select who should receive wasted xp after it accumulates 10? xp
 
 
 local share_bones_time = tonumber(minetest.setting_get("share_bones_time")) or 1200
@@ -339,4 +340,3 @@ minetest.after(0,
 		set_after_dig_node("default:stone_with_diamond");
 	end
 )
-
